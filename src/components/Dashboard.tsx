@@ -61,7 +61,6 @@ export function Dashboard({ stats, trends, packageDist, companies }: DashboardPr
     if (idx===2) return { background:'linear-gradient(135deg,#b45309,#d97706)' };
     return { background:'rgba(56,189,248,0.15)', color:'#38bdf8' };
   };
-
   return (
     <div style={{ display:'flex', flexDirection:'column', gap: 24 }}>
       {/* KPI row */}
