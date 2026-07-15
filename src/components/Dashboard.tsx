@@ -14,7 +14,6 @@ const BRANCH_C: Record<string, string> = {
   'CSE':'#38bdf8','IT':'#34d399','ECE':'#fbbf24','EE':'#a78bfa',
   'ME':'#f472b6','CE':'#fb923c','CSE (AI/ML)':'#22d3ee','CSE (Data Science)':'#818cf8',
 };
-
 const TOOLTIP_STYLE = {
   backgroundColor: '#1a1e2e',
   border: '1px solid rgba(255,255,255,0.08)',
@@ -22,7 +21,6 @@ const TOOLTIP_STYLE = {
   color: 'white',
   fontSize: 12,
 };
-
 interface DashboardProps {
   stats: {
     totalOffers: number; totalCompanies: number; highestPackage: number;
