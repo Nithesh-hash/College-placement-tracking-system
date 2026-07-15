@@ -42,7 +42,6 @@ const TOOLTIP_STYLE = {
   color: 'white',
   fontSize: 12,
 };
-
 interface BranchAnalyticsProps {
   branchStats: BranchStat[];
 }
