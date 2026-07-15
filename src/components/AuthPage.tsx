@@ -52,7 +52,6 @@ function DisclaimerModal({ onClose }: { onClose: () => void }) {
     </div>
   );
 }
-
 export function AuthPage() {
   const [isLogin, setIsLogin] = useState(true);
   const [username, setUsername] = useState('');
