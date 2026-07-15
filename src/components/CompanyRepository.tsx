@@ -12,7 +12,7 @@ import type { Company } from '../types';
 const C = ['#38bdf8','#34d399','#fbbf24','#f472b6','#a78bfa','#22d3ee','#fb923c','#4ade80'];
 const TOOLTIP_STYLE = { backgroundColor:'#1a1e2e', border:'1px solid rgba(255,255,255,0.08)', borderRadius:10, color:'white', fontSize:12 };
 
-export function CompanyRepository({ companies }: { companies: Company[] }) {
+export function CompanyRepository({ companies }: { companies: Company[] })    {
   const [search, setSearch] = useState('');
   const [sortField, setSortField] = useState<'package'|'name'|'num_offers'>('package');
   const [sortOrder, setSortOrder] = useState<'asc'|'desc'>('desc');
