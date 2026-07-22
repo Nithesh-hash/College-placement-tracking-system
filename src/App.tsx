@@ -1,10 +1,8 @@
 import { useState, useEffect, useMemo } from 'react';
-import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { AuthPage } from './components/AuthPage';
 import { Dashboard } from './components/Dashboard';
 import { CompanyRepository } from './components/CompanyRepository';
 import { BranchAnalytics } from './components/BranchAnalytics';
-import { supabase } from './lib/supabase';
 import {
   BarChart3, Building2, Users, GraduationCap,
   LogOut, ChevronDown, Menu, X,
@@ -19,32 +17,17 @@ const TABS = [
   { id: 'branches' as TabType, label: 'Branch Analytics', icon: Users },
 ];
 
-function AppContent() {
-  const { user, loading: authLoading, signOut } = useAuth();
+export function App() {
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [activeTab, setActiveTab] = useState<TabType>('dashboard');
   const [companies, setCompanies] = useState<Company[]>([]);
   const [branchStats, setBranchStats] = useState<BranchStat[]>([]);
   const [trends, setTrends] = useState<PlacementTrend[]>([]);
   const [packageDist, setPackageDist] = useState<PackageDist[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
-  useEffect(() => {
-    async function fetchData() {
-      const [companiesRes, branchRes, trendsRes, distRes] = await Promise.all([
-        supabase.from('companies').select('*').order('package', { ascending: false }),
-        supabase.from('branch_stats').select('*').order('year', { ascending: false }),
-        supabase.from('placement_trends').select('*').order('year', { ascending: false }),
-        supabase.from('package_distribution').select('*').order('range_start'),
-      ]);
-      if (companiesRes.data) setCompanies(companiesRes.data as Company[]);
-      if (branchRes.data) setBranchStats(branchRes.data as BranchStat[]);
-      if (trendsRes.data) setTrends(trendsRes.data as PlacementTrend[]);
-      if (distRes.data) setPackageDist(distRes.data as PackageDist[]);
-      setLoading(false);
-    }
-    fetchData();
-  }, []);
+  const username = 'Nithesh';
 
   const currentYearStats = useMemo(() => {
     const latest = trends[0];
@@ -61,18 +44,10 @@ function AppContent() {
     };
   }, [trends]);
 
-  if (authLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center" style={{ background: 'var(--bg-base)' }}>
-        <div className="text-center">
-          <div style={{ width: 36, height: 36, border: '3px solid rgba(56,189,248,0.15)', borderTopColor: '#38bdf8', borderRadius: '50%', animation: 'spin 0.8s linear infinite', margin: '0 auto 14px' }}></div>
-          <p style={{ color: '#6b7191', fontSize: 14 }}>Loading…</p>
-        </div>
-      </div>
-    );
+  // If user is not logged in, show AuthPage
+  if (!isAuthenticated) {
+    return <AuthPage onLogin={() => setIsAuthenticated(true)} />;
   }
-
-  if (!user) return <AuthPage />;
 
   if (loading) {
     return (
@@ -85,7 +60,6 @@ function AppContent() {
     );
   }
 
-  const username = user.email?.split('@')[0] ?? 'User';
   const activeTabMeta = TABS.find((t) => t.id === activeTab)!;
 
   const SidebarContent = () => (
@@ -132,7 +106,7 @@ function AppContent() {
           </div>
         </div>
         <button
-          onClick={signOut}
+          onClick={() => setIsAuthenticated(false)}
           className="nav-item w-full"
           style={{ color: '#f87171' }}
         >
@@ -211,7 +185,7 @@ function AppContent() {
             height: 62,
             display: 'flex',
             alignItems: 'center',
-            justifyContent: 'space-between',
+            justify-between: 'space-between',
             position: 'sticky',
             top: 0,
             zIndex: 20,
@@ -265,14 +239,6 @@ function AppContent() {
         </main>
       </div>
     </div>
-  );
-}
-
-function App() {
-  return (
-    <AuthProvider>
-      <AppContent />
-    </AuthProvider>
   );
 }
 
