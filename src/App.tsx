@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useMemo } from 'react';
 import { AuthPage } from './components/AuthPage';
 import { Dashboard } from './components/Dashboard';
 import { CompanyRepository } from './components/CompanyRepository';
@@ -17,20 +17,86 @@ const TABS = [
   { id: 'branches' as TabType, label: 'Branch Analytics', icon: Users },
 ];
 
+// Mock Data so the application renders cleanly without Supabase
+const MOCK_TRENDS: PlacementTrend[] = [
+  {
+    id: '1',
+    year: 2026,
+    total_offers: 3200,
+    total_companies: 145,
+    highest_package: 54,
+    avg_package: 9.2,
+    median_package: 8.5,
+    highest_stipend: 120000,
+    avg_stipend: 35000,
+    placement_rate: 88,
+  }
+];
+
+const MOCK_COMPANIES: Company[] = [
+  {
+    id: '1',
+    name: 'Microsoft',
+    category: 'Super Dream',
+    package: 51,
+    stipend: 125000,
+    roles: ['SDE-1', 'PM'],
+    branches_eligible: ['CSE', 'ECE', 'IT'],
+    cgpa_cutoff: 8.5,
+    offers_count: 42,
+    visit_date: '2025-08-10',
+  },
+  {
+    id: '2',
+    name: 'Amazon',
+    category: 'Super Dream',
+    package: 45,
+    stipend: 110000,
+    roles: ['SDE-1'],
+    branches_eligible: ['CSE', 'ECE', 'EEE', 'IT'],
+    cgpa_cutoff: 8.0,
+    offers_count: 85,
+    visit_date: '2025-08-15',
+  }
+];
+
+const MOCK_BRANCH_STATS: BranchStat[] = [
+  {
+    id: '1',
+    branch: 'CSE',
+    year: 2026,
+    total_students: 1200,
+    placed_students: 1080,
+    avg_package: 11.5,
+    highest_package: 54,
+  },
+  {
+    id: '2',
+    branch: 'ECE',
+    year: 2026,
+    total_students: 800,
+    placed_students: 680,
+    avg_package: 8.8,
+    highest_package: 32,
+  }
+];
+
+const MOCK_PACKAGE_DIST: PackageDist[] = [
+  { id: '1', range_label: '< 6 LPA', range_start: 0, count: 450 },
+  { id: '2', range_label: '6 - 10 LPA', range_start: 6, count: 1200 },
+  { id: '3', range_label: '10 - 20 LPA', range_start: 10, count: 950 },
+  { id: '4', range_label: '> 20 LPA', range_start: 20, count: 600 },
+];
+
 export function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [activeTab, setActiveTab] = useState<TabType>('dashboard');
-  const [companies, setCompanies] = useState<Company[]>([]);
-  const [branchStats, setBranchStats] = useState<BranchStat[]>([]);
-  const [trends, setTrends] = useState<PlacementTrend[]>([]);
-  const [packageDist, setPackageDist] = useState<PackageDist[]>([]);
-  const [loading, setLoading] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   const username = 'Nithesh';
 
   const currentYearStats = useMemo(() => {
-    const latest = trends[0];
+    const latest = MOCK_TRENDS[0];
     if (!latest) return null;
     return {
       totalOffers: latest.total_offers,
@@ -42,22 +108,11 @@ export function App() {
       avgStipend: latest.avg_stipend,
       placementRate: latest.placement_rate,
     };
-  }, [trends]);
+  }, []);
 
   // If user is not logged in, show AuthPage
   if (!isAuthenticated) {
     return <AuthPage onLogin={() => setIsAuthenticated(true)} />;
-  }
-
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center" style={{ background: 'var(--bg-base)' }}>
-        <div className="text-center">
-          <div style={{ width: 36, height: 36, border: '3px solid rgba(56,189,248,0.15)', borderTopColor: '#38bdf8', borderRadius: '50%', animation: 'spin 0.8s linear infinite', margin: '0 auto 14px' }}></div>
-          <p style={{ color: '#6b7191', fontSize: 14 }}>Loading placement data…</p>
-        </div>
-      </div>
-    );
   }
 
   const activeTabMeta = TABS.find((t) => t.id === activeTab)!;
@@ -185,7 +240,7 @@ export function App() {
             height: 62,
             display: 'flex',
             alignItems: 'center',
-            justify-between: 'space-between',
+            justifyContent: 'space-between',
             position: 'sticky',
             top: 0,
             zIndex: 20,
@@ -232,10 +287,10 @@ export function App() {
         {/* Content */}
         <main style={{ padding: '20px', flex: 1, overflowY: 'auto' }} className="fade-up lg:p-7">
           {activeTab === 'dashboard' && (
-            <Dashboard stats={currentYearStats} trends={trends} packageDist={packageDist} companies={companies} />
+            <Dashboard stats={currentYearStats} trends={MOCK_TRENDS} packageDist={MOCK_PACKAGE_DIST} companies={MOCK_COMPANIES} />
           )}
-          {activeTab === 'companies' && <CompanyRepository companies={companies} />}
-          {activeTab === 'branches' && <BranchAnalytics branchStats={branchStats} />}
+          {activeTab === 'companies' && <CompanyRepository companies={MOCK_COMPANIES} />}
+          {activeTab === 'branches' && <BranchAnalytics branchStats={MOCK_BRANCH_STATS} />}
         </main>
       </div>
     </div>
