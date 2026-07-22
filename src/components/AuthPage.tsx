@@ -2,10 +2,10 @@ import { useState } from 'react';
 import { GraduationCap, User, Lock, Eye, EyeOff, AlertCircle } from 'lucide-react';
 
 interface AuthPageProps {
-  onLoginSuccess?: () => void;
+  onLogin: () => void;
 }
 
-export function AuthPage({ onLoginSuccess }: AuthPageProps) {
+export function AuthPage({ onLogin }: AuthPageProps) {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -22,27 +22,19 @@ export function AuthPage({ onLoginSuccess }: AuthPageProps) {
 
     // Direct Credential Check
     if (username === 'Nithesh' && password === 'Agile@123') {
-      if (onLoginSuccess) {
-        onLoginSuccess();
-      } else {
-        alert('Login successful!');
-      }
+      onLogin(); // Triggers navigation/state change to Dashboard
     } else {
       setError('Invalid username or password. Please try again.');
     }
   };
 
   return (
-    <div
-      className="min-h-screen flex"
-      style={{ background: 'var(--bg-base)' }}
-    >
+    <div className="min-h-screen flex" style={{ background: 'var(--bg-base)' }}>
       {/* Left Panel — Branding */}
       <div
         className="hidden lg:flex flex-col justify-between w-1/2 p-12 relative overflow-hidden"
         style={{ background: 'linear-gradient(145deg, #0d1117 0%, #0a1628 60%, #051020 100%)' }}
       >
-        {/* Background Glows */}
         <div style={{ position: 'absolute', top: -120, left: -120, width: 400, height: 400, background: 'rgba(56,189,248,0.06)', borderRadius: '50%', filter: 'blur(80px)', pointerEvents: 'none' }} />
         <div style={{ position: 'absolute', bottom: -80, right: -80, width: 300, height: 300, background: 'rgba(99,102,241,0.06)', borderRadius: '50%', filter: 'blur(60px)', pointerEvents: 'none' }} />
 
@@ -83,7 +75,6 @@ export function AuthPage({ onLoginSuccess }: AuthPageProps) {
 
       {/* Right Panel — Form */}
       <div className="flex-1 flex flex-col items-center justify-center p-8">
-        {/* Mobile logo */}
         <div className="flex lg:hidden items-center gap-3 mb-10">
           <div style={{ background: 'rgba(56,189,248,0.12)', borderRadius: 10, padding: 8 }}>
             <GraduationCap className="w-6 h-6" style={{ color: '#38bdf8' }} />
@@ -93,15 +84,10 @@ export function AuthPage({ onLoginSuccess }: AuthPageProps) {
 
         <div className="w-full max-w-sm fade-up">
           <div className="mb-8">
-            <h2 className="text-2xl font-bold text-white mb-1">
-              Welcome back
-            </h2>
-            <p style={{ color: '#6b7191', fontSize: 14 }}>
-              Sign in to access your dashboard
-            </p>
+            <h2 className="text-2xl font-bold text-white mb-1">Welcome back</h2>
+            <p style={{ color: '#6b7191', fontSize: 14 }}>Sign in to access your dashboard</p>
           </div>
 
-          {/* Alert Error Message */}
           {error && (
             <div className="flex items-start gap-3 mb-4" style={{ background: 'rgba(248,113,113,0.08)', border: '1px solid rgba(248,113,113,0.15)', borderRadius: 10, padding: '12px 14px' }}>
               <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5" style={{ color: '#f87171' }} />
@@ -110,7 +96,6 @@ export function AuthPage({ onLoginSuccess }: AuthPageProps) {
           )}
 
           <form onSubmit={handleSubmit} className="space-y-4">
-            {/* Username */}
             <div>
               <label style={{ fontSize: 13, fontWeight: 500, color: '#8892aa', display: 'block', marginBottom: 6 }}>Username</label>
               <div className="relative">
@@ -125,7 +110,6 @@ export function AuthPage({ onLoginSuccess }: AuthPageProps) {
               </div>
             </div>
 
-            {/* Password */}
             <div>
               <label style={{ fontSize: 13, fontWeight: 500, color: '#8892aa', display: 'block', marginBottom: 6 }}>Password</label>
               <div className="relative">
@@ -150,7 +134,6 @@ export function AuthPage({ onLoginSuccess }: AuthPageProps) {
               </div>
             </div>
 
-            {/* Submit Button */}
             <div className="pt-2">
               <button type="submit" className="btn-primary flex items-center justify-center gap-2">
                 Sign In
