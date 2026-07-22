@@ -1,104 +1,34 @@
 import { useState } from 'react';
-import { supabase } from '../lib/supabase';
-import {
-  GraduationCap, User, Lock, Eye, EyeOff,
-  AlertCircle, Loader2, CheckCircle2, ShieldAlert, X,
-} from 'lucide-react';
+import { GraduationCap, User, Lock, Eye, EyeOff, AlertCircle } from 'lucide-react';
 
-function DisclaimerModal({ onClose }: { onClose: () => void }) {
-  return (
-    <div className="modal-backdrop">
-      <div
-        className="w-full max-w-sm fade-up"
-        style={{ background: '#12151f', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 18, overflow: 'hidden' }}
-      >
-        {/* Header */}
-        <div style={{ background: 'rgba(251,191,36,0.08)', borderBottom: '1px solid rgba(251,191,36,0.12)', padding: '18px 22px' }}>
-          <div className="flex items-center gap-3">
-            <div style={{ background: 'rgba(251,191,36,0.15)', borderRadius: 10, padding: 8 }}>
-              <ShieldAlert className="w-5 h-5" style={{ color: '#fbbf24' }} />
-            </div>
-            <h2 className="font-bold text-white text-lg">Disclaimer</h2>
-          </div>
-        </div>
-
-        {/* Body */}
-        <div style={{ padding: '22px 22px 10px' }}>
-          <p style={{ fontSize: 14, lineHeight: 1.7, color: '#a0a8c0' }}>
-            The data presented in this dashboard is for <span className="text-white font-medium">informational purposes only</span>. It may not fully represent the official placement statistics.
-          </p>
-          <p style={{ fontSize: 14, lineHeight: 1.7, color: '#a0a8c0', marginTop: 12 }}>
-            Please verify with the <span className="text-white font-medium">placement cell</span> for accurate and up-to-date details. Figures may vary based on the academic batch and reporting period.
-          </p>
-
-          <div style={{ background: 'rgba(56,189,248,0.06)', border: '1px solid rgba(56,189,248,0.12)', borderRadius: 10, padding: '12px 14px', marginTop: 16 }}>
-            <p style={{ fontSize: 12, color: '#60a5fa' }}>
-              Data covers VIT Vellore 2025-26 placement season. Last updated: July 2026.
-            </p>
-          </div>
-        </div>
-
-        {/* Footer */}
-        <div style={{ padding: '16px 22px 22px', display: 'flex', gap: 10 }}>
-          <button
-            onClick={onClose}
-            className="btn-primary flex items-center justify-center gap-2"
-          >
-            <CheckCircle2 className="w-4 h-4" />
-            I Understand, Continue
-          </button>
-        </div>
-      </div>
-    </div>
-  );
+interface AuthPageProps {
+  onLoginSuccess?: () => void;
 }
-export function AuthPage() {
-  const [isLogin, setIsLogin] = useState(true);
+
+export function AuthPage({ onLoginSuccess }: AuthPageProps) {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [message, setMessage] = useState<string | null>(null);
-  const [showDisclaimer, setShowDisclaimer] = useState(true);
 
-  const validateForm = () => {
-    if (!username || !password) { setError('Please fill in all fields'); return false; }
-    if (username.length < 3) { setError('Username must be at least 3 characters'); return false; }
-    if (!/^[a-zA-Z0-9_]+$/.test(username)) { setError('Username: letters, numbers, underscores only'); return false; }
-    if (password.length < 6) { setError('Password must be at least 6 characters'); return false; }
-    if (!isLogin && password !== confirmPassword) { setError('Passwords do not match'); return false; }
-    return true;
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    setError(null); setMessage(null);
-    if (!validateForm()) return;
-    setLoading(true);
+    setError(null);
 
-    try {
-      const email = `${username.toLowerCase()}@placementtracker.local`;
+    if (!username || !password) {
+      setError('Please fill in all fields');
+      return;
+    }
 
-      if (isLogin) {
-        const { error } = await supabase.auth.signInWithPassword({ email, password });
-        if (error) setError('Invalid username or password. Please try again.');
+    // Direct Credential Check
+    if (username === 'Nithesh' && password === 'Agile@123') {
+      if (onLoginSuccess) {
+        onLoginSuccess();
       } else {
-        const { data, error } = await supabase.auth.signUp({ email, password });
-        if (error) {
-          setError(error.message.includes('already registered')
-            ? 'This username is already taken. Please choose another.'
-            : error.message);
-        } else if (data.user) {
-          await supabase.from('app_users').insert({ id: data.user.id, username: username.toLowerCase() });
-          setMessage('Account created! You are now logged in.');
-        }
+        alert('Login successful!');
       }
-    } catch {
-      setError('An unexpected error occurred. Please try again.');
-    } finally {
-      setLoading(false);
+    } else {
+      setError('Invalid username or password. Please try again.');
     }
   };
 
@@ -107,8 +37,6 @@ export function AuthPage() {
       className="min-h-screen flex"
       style={{ background: 'var(--bg-base)' }}
     >
-      {showDisclaimer && <DisclaimerModal onClose={() => setShowDisclaimer(false)} />}
-
       {/* Left Panel — Branding */}
       <div
         className="hidden lg:flex flex-col justify-between w-1/2 p-12 relative overflow-hidden"
@@ -166,36 +94,18 @@ export function AuthPage() {
         <div className="w-full max-w-sm fade-up">
           <div className="mb-8">
             <h2 className="text-2xl font-bold text-white mb-1">
-              {isLogin ? 'Welcome back' : 'Create account'}
+              Welcome back
             </h2>
             <p style={{ color: '#6b7191', fontSize: 14 }}>
-              {isLogin ? 'Sign in to access your dashboard' : 'Get started with Placement Tracker'}
+              Sign in to access your dashboard
             </p>
           </div>
 
-          {/* Tab Switcher */}
-          <div className="tab-bar mb-6">
-            <div
-              className={`tab-item${isLogin ? ' active' : ''}`}
-              onClick={() => { setIsLogin(true); setError(null); setMessage(null); }}
-            >Login</div>
-            <div
-              className={`tab-item${!isLogin ? ' active' : ''}`}
-              onClick={() => { setIsLogin(false); setError(null); setMessage(null); }}
-            >Sign Up</div>
-          </div>
-
-          {/* Alerts */}
+          {/* Alert Error Message */}
           {error && (
             <div className="flex items-start gap-3 mb-4" style={{ background: 'rgba(248,113,113,0.08)', border: '1px solid rgba(248,113,113,0.15)', borderRadius: 10, padding: '12px 14px' }}>
               <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5" style={{ color: '#f87171' }} />
               <p style={{ fontSize: 13, color: '#fca5a5' }}>{error}</p>
-            </div>
-          )}
-          {message && (
-            <div className="flex items-start gap-3 mb-4" style={{ background: 'rgba(52,211,153,0.08)', border: '1px solid rgba(52,211,153,0.15)', borderRadius: 10, padding: '12px 14px' }}>
-              <CheckCircle2 className="w-4 h-4 flex-shrink-0 mt-0.5" style={{ color: '#34d399' }} />
-              <p style={{ fontSize: 13, color: '#6ee7b7' }}>{message}</p>
             </div>
           )}
 
@@ -209,7 +119,7 @@ export function AuthPage() {
                   type="text"
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
-                  placeholder="your_username"
+                  placeholder="Enter username"
                   className="field field-icon"
                 />
               </div>
@@ -240,50 +150,13 @@ export function AuthPage() {
               </div>
             </div>
 
-            {/* Confirm Password */}
-            {!isLogin && (
-              <div>
-                <label style={{ fontSize: 13, fontWeight: 500, color: '#8892aa', display: 'block', marginBottom: 6 }}>Confirm Password</label>
-                <div className="relative">
-                  <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4" style={{ color: '#4a5168' }} />
-                  <input
-                    type={showPassword ? 'text' : 'password'}
-                    value={confirmPassword}
-                    onChange={(e) => setConfirmPassword(e.target.value)}
-                    placeholder="••••••••"
-                    className="field field-icon"
-                  />
-                </div>
-              </div>
-            )}
-
-            <div className="pt-1">
-              <button type="submit" disabled={loading} className="btn-primary flex items-center justify-center gap-2">
-                {loading ? (
-                  <><Loader2 className="w-4 h-4 animate-spin" />{isLogin ? 'Signing in...' : 'Creating account...'}</>
-                ) : isLogin ? 'Sign In' : 'Create Account'}
+            {/* Submit Button */}
+            <div className="pt-2">
+              <button type="submit" className="btn-primary flex items-center justify-center gap-2">
+                Sign In
               </button>
             </div>
           </form>
-
-          <p className="text-center mt-5" style={{ fontSize: 13, color: '#6b7191' }}>
-            {isLogin ? "Don't have an account? " : 'Already have an account? '}
-            <button
-              onClick={() => { setIsLogin(!isLogin); setError(null); setMessage(null); }}
-              style={{ color: '#38bdf8', fontWeight: 600 }}
-            >
-              {isLogin ? 'Sign up' : 'Log in'}
-            </button>
-          </p>
-
-          <button
-            onClick={() => setShowDisclaimer(true)}
-            className="flex items-center gap-2 mx-auto mt-6"
-            style={{ fontSize: 12, color: '#3d4260' }}
-          >
-            <ShieldAlert className="w-3 h-3" />
-            View Disclaimer
-          </button>
         </div>
       </div>
     </div>
