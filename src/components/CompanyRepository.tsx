@@ -39,22 +39,74 @@ export function CompanyRepository({ companies }: { companies: Company[] })    {
   const allBranches = useMemo(()=>{const s=new Set<string>(); normalizedCompanies.forEach(c=>c.branches?.forEach(b=>s.add(b))); return Array.from(s).sort();}, [normalizedCompanies]);
   const offerTypes  = useMemo(()=>Array.from(new Set(normalizedCompanies.map(c=>c.offer_type).filter(Boolean))), [normalizedCompanies]);
 
-  const filteredCompanies = useMemo(()=>{
-    let r=[...normalizedCompanies];
-    if(search){const sl=search.toLowerCase(); r=r.filter(c=>c.name.toLowerCase().includes(sl)||c.role?.toLowerCase().includes(sl)||c.offer_type?.toLowerCase().includes(sl));}
-    if(filters.offerType.length>0) r=r.filter(c=>filters.offerType.includes(c.offer_type));
-    if(filters.minPackage!==null) r=r.filter(c=>(c.package||0)>=filters.minPackage!);
-    if(filters.maxPackage!==null) r=r.filter(c=>(c.package||0)<=filters.maxPackage!);
-    if(filters.branches.length>0) r=r.filter(c=>c.branches?.some(b=>filters.branches.includes(b)));
-    r.sort((a,b)=>{
-      let av:any,bv:any;
-      if(sortField==='name'){av=a.name.toLowerCase();bv=b.name.toLowerCase();}
-      else if(sortField==='package'){av=a.package||0;bv=b.package||0;}
-      else{av=a.num_offers||0;bv=b.num_offers||0;}
-      return sortOrder==='asc'?(av>bv?1:-1):(av<bv?1:-1);
-    });
-    return r;
-  },[normalizedCompanies,search,sortField,sortOrder,filters]);
+ const filteredCompanies = useMemo(() => {
+  const filtered = [...normalizedCompanies];
+
+  let result = filtered;
+
+  if (search) {
+    const searchText = search.toLowerCase();
+
+    result = result.filter(company =>
+      company.name.toLowerCase().includes(searchText) ||
+      company.role?.toLowerCase().includes(searchText) ||
+      company.offer_type?.toLowerCase().includes(searchText)
+    );
+  }
+
+  if (filters.offerType.length > 0) {
+    result = result.filter(company =>
+      filters.offerType.includes(company.offer_type)
+    );
+  }
+
+  if (filters.minPackage !== null) {
+    result = result.filter(company =>
+      (company.package || 0) >= filters.minPackage!
+    );
+  }
+
+  if (filters.maxPackage !== null) {
+    result = result.filter(company =>
+      (company.package || 0) <= filters.maxPackage!
+    );
+  }
+
+  if (filters.branches.length > 0) {
+    result = result.filter(company =>
+      company.branches?.some(branch =>
+        filters.branches.includes(branch)
+      )
+    );
+  }
+
+  result.sort((firstCompany, secondCompany) => {
+    let firstValue: any;
+    let secondValue: any;
+
+    switch (sortField) {
+      case 'name':
+        firstValue = firstCompany.name.toLowerCase();
+        secondValue = secondCompany.name.toLowerCase();
+        break;
+
+      case 'package':
+        firstValue = firstCompany.package || 0;
+        secondValue = secondCompany.package || 0;
+        break;
+
+      default:
+        firstValue = firstCompany.num_offers || 0;
+        secondValue = secondCompany.num_offers || 0;
+    }
+
+    return sortOrder === 'asc'
+      ? (firstValue > secondValue ? 1 : -1)
+      : (firstValue < secondValue ? 1 : -1);
+  });
+
+  return result;
+}, [normalizedCompanies, search, sortField, sortOrder, filters]);
 
   const totalOffers     = useMemo(()=>normalizedCompanies.reduce((s,c)=>s+(c.num_offers||0),0),[normalizedCompanies]);
   const activeRecruiters= useMemo(()=>normalizedCompanies.filter(c=>c.num_offers>0).length,[normalizedCompanies]);
