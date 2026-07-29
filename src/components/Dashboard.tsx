@@ -8,7 +8,6 @@ import {
   AreaChart, Area, Legend, BarChart as RechartsBarChart, Bar,
 } from 'recharts';
 import type { Company, PlacementTrend, PackageDist } from '../types';
-
 const C = ['#38bdf8','#34d399','#fbbf24','#f472b6','#a78bfa','#22d3ee','#fb923c'];
 const BRANCH_C: Record<string, string> = {
   'CSE':'#38bdf8','IT':'#34d399','ECE':'#fbbf24','EEE':'#a78bfa',
@@ -16,6 +15,7 @@ const BRANCH_C: Record<string, string> = {
   'CSE (Cyber Security)':'#ec4899','ECE (VLSI)':'#3b82f6','ECE (Embedded)':'#f43f5e',
   'Biotechnology':'#10b981','Chemical Engineering':'#f97316'
 };
+
 const TOOLTIP_STYLE = {
   backgroundColor: '#1a1e2e',
   border: '1px solid rgba(255,255,255,0.08)',
