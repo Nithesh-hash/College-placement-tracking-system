@@ -13,6 +13,7 @@ import {
   YAxis,
   CartesianGrid,
   Tooltip,
+  Legend,
   ResponsiveContainer,
   PieChart,
   Pie,
@@ -41,6 +42,12 @@ const TOOLTIP_STYLE = {
   borderRadius: 10,
   color: 'white',
   fontSize: 12,
+};
+
+const LEGEND_STYLE = {
+  fontSize: 11,
+  color: 'var(--text-secondary)',
+  paddingTop: 12,
 };
 
 // Safe percentage helper — avoids NaN/Infinity when total_students is 0
@@ -101,6 +108,13 @@ export function BranchAnalytics({ branchStats }: BranchAnalyticsProps) {
   };
 
   const hasData = yearStats.length > 0;
+  const branchCount = yearStats.length;
+
+  // Offers chart needs more room and steeper label rotation once branch
+  // count climbs past what fits comfortably on one row.
+  const offersLabelAngle = branchCount > 8 ? -50 : -35;
+  const offersBottomMargin = branchCount > 8 ? 85 : 60;
+  const offersAxisHeight = branchCount > 8 ? 95 : 70;
 
   return (
     <div className="space-y-6">
@@ -195,7 +209,7 @@ export function BranchAnalytics({ branchStats }: BranchAnalyticsProps) {
                   <DollarSign className="w-4 h-4" style={{ color: '#38bdf8' }} />
                 </div>
               </div>
-              <ResponsiveContainer width="100%" height={Math.max(320, yearStats.length * 44)}>
+              <ResponsiveContainer width="100%" height={Math.max(320, branchCount * 40)}>
                 <RechartsBarChart data={yearStats} layout="vertical" margin={{ top: 4, right: 24, bottom: 4, left: 4 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.06)" horizontal={false} />
                   <XAxis type="number" domain={[0, Math.ceil(maxAvgPackage * 1.15)]} stroke="rgba(255,255,255,0.4)" fontSize={11} />
@@ -208,7 +222,7 @@ export function BranchAnalytics({ branchStats }: BranchAnalyticsProps) {
                     interval={0}
                   />
                   <Tooltip contentStyle={TOOLTIP_STYLE} formatter={(value) => [`${value} LPA`, 'Avg Package']} />
-                  <Bar dataKey="avg_package" radius={[0, 6, 6, 0]} maxBarSize={28} minPointSize={2}>
+                  <Bar dataKey="avg_package" radius={[0, 6, 6, 0]} maxBarSize={24} minPointSize={2}>
                     {yearStats.map((entry) => (
                       <Cell key={entry.id} fill={BRANCH_COLORS[entry.branch] || '#0ea5e9'} />
                     ))}
@@ -228,7 +242,7 @@ export function BranchAnalytics({ branchStats }: BranchAnalyticsProps) {
                   <Award className="w-4 h-4" style={{ color: '#fbbf24' }} />
                 </div>
               </div>
-              <ResponsiveContainer width="100%" height={Math.max(320, yearStats.length * 44)}>
+              <ResponsiveContainer width="100%" height={Math.max(320, branchCount * 40)}>
                 <RechartsBarChart data={yearStats} layout="vertical" margin={{ top: 4, right: 24, bottom: 4, left: 4 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.06)" horizontal={false} />
                   <XAxis type="number" domain={[0, Math.ceil(maxHighestPackage * 1.15)]} stroke="rgba(255,255,255,0.4)" fontSize={11} />
@@ -241,7 +255,7 @@ export function BranchAnalytics({ branchStats }: BranchAnalyticsProps) {
                     interval={0}
                   />
                   <Tooltip contentStyle={TOOLTIP_STYLE} formatter={(value) => [`${value} LPA`, 'Highest Package']} />
-                  <Bar dataKey="highest_package" radius={[0, 6, 6, 0]} maxBarSize={28} minPointSize={2}>
+                  <Bar dataKey="highest_package" radius={[0, 6, 6, 0]} maxBarSize={24} minPointSize={2}>
                     {yearStats.map((entry) => (
                       <Cell key={entry.id} fill={BRANCH_COLORS[entry.branch] || '#0ea5e9'} />
                     ))}
@@ -264,24 +278,32 @@ export function BranchAnalytics({ branchStats }: BranchAnalyticsProps) {
                   <Users className="w-4 h-4" style={{ color: '#38bdf8' }} />
                 </div>
               </div>
-              <ResponsiveContainer width="100%" height={340}>
-                <PieChart margin={{ top: 16, right: 16, bottom: 16, left: 16 }}>
+              {/* With up to 12 slices, inline name+percent labels overlap badly —
+                  a legend below the pie reads far more cleanly. */}
+              <ResponsiveContainer width="100%" height={branchCount > 8 ? 420 : 360}>
+                <PieChart margin={{ top: 8, right: 8, bottom: 8, left: 8 }}>
                   <Pie
                     data={yearStats}
                     cx="50%"
-                    cy="50%"
-                    outerRadius={90}
+                    cy="46%"
+                    outerRadius={branchCount > 8 ? 90 : 100}
                     dataKey="students_placed"
                     nameKey="branch"
                     minAngle={2}
-                    label={({ name, percent }) => `${name} ${((percent || 0) * 100).toFixed(0)}%`}
-                    labelLine={{ stroke: 'rgba(255,255,255,0.25)' }}
+                    label={({ percent }) => `${((percent || 0) * 100).toFixed(0)}%`}
+                    labelLine={false}
                   >
                     {yearStats.map((entry) => (
                       <Cell key={entry.id} fill={BRANCH_COLORS[entry.branch] || '#0ea5e9'} />
                     ))}
                   </Pie>
-                  <Tooltip contentStyle={TOOLTIP_STYLE} />
+                  <Tooltip contentStyle={TOOLTIP_STYLE} formatter={(value, _name, item) => [`${value} placed`, item?.payload?.branch]} />
+                  <Legend
+                    wrapperStyle={LEGEND_STYLE}
+                    iconType="circle"
+                    iconSize={8}
+                    formatter={(value) => <span style={{ color: 'var(--text-secondary)' }}>{value}</span>}
+                  />
                 </PieChart>
               </ResponsiveContainer>
             </div>
@@ -297,13 +319,21 @@ export function BranchAnalytics({ branchStats }: BranchAnalyticsProps) {
                   <Briefcase className="w-4 h-4" style={{ color: '#34d399' }} />
                 </div>
               </div>
-              <ResponsiveContainer width="100%" height={340}>
-                <RechartsBarChart data={yearStats} margin={{ top: 8, right: 8, bottom: 60, left: 8 }}>
+              <ResponsiveContainer width="100%" height={branchCount > 8 ? 420 : 360}>
+                <RechartsBarChart data={yearStats} margin={{ top: 8, right: 8, bottom: offersBottomMargin, left: 8 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.06)" vertical={false} />
-                  <XAxis dataKey="branch" stroke="rgba(255,255,255,0.4)" tick={{ fontSize: 9 }} angle={-35} textAnchor="end" interval={0} height={70} />
+                  <XAxis
+                    dataKey="branch"
+                    stroke="rgba(255,255,255,0.4)"
+                    tick={{ fontSize: 9 }}
+                    angle={offersLabelAngle}
+                    textAnchor="end"
+                    interval={0}
+                    height={offersAxisHeight}
+                  />
                   <YAxis stroke="rgba(255,255,255,0.4)" fontSize={11} domain={[0, Math.ceil(maxOffers * 1.15)]} allowDecimals={false} />
                   <Tooltip contentStyle={TOOLTIP_STYLE} />
-                  <Bar dataKey="total_offers" radius={[6, 6, 0, 0]} maxBarSize={48} minPointSize={2}>
+                  <Bar dataKey="total_offers" radius={[6, 6, 0, 0]} maxBarSize={40} minPointSize={2}>
                     {yearStats.map((entry) => (
                       <Cell key={entry.id} fill={BRANCH_COLORS[entry.branch] || '#0ea5e9'} />
                     ))}
