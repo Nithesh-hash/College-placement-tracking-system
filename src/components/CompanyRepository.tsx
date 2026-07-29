@@ -1,5 +1,5 @@
 /* hello its umair  */
-
+/* its new change */
 import { useMemo, useState } from 'react';
 import {
   Building2, Search, SortAsc, SortDesc, ChevronDown,
@@ -10,7 +10,6 @@ import {
   Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend,
 } from 'recharts';
 import type { Company } from '../types';
-
 const C = ['#38bdf8','#34d399','#fbbf24','#f472b6','#a78bfa','#22d3ee','#fb923c','#4ade80'];
 const TOOLTIP_STYLE = { backgroundColor:'#1a1e2e', border:'1px solid rgba(255,255,255,0.08)', borderRadius:10, color:'white', fontSize:12 };
 
