@@ -61,7 +61,6 @@ function safePct(placed: number, total: number): number {
 interface BranchAnalyticsProps {
   branchStats: BranchStat[];
 }
-
 export function BranchAnalytics({ branchStats }: BranchAnalyticsProps) {
   const [selectedYear, setSelectedYear] = useState<number>(2026);
 
@@ -82,7 +81,6 @@ export function BranchAnalytics({ branchStats }: BranchAnalyticsProps) {
   const years = useMemo(() => {
     return Array.from(new Set(normalizedBranchStats.map((b) => b.year))).sort((a, b) => b - a);
   }, [normalizedBranchStats]);
-
   const yearStats = useMemo(() => {
     return normalizedBranchStats.filter((b) => b.year === selectedYear);
   }, [normalizedBranchStats, selectedYear]);
