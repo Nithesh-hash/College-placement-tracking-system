@@ -1,4 +1,4 @@
-/*agile*/
+/*agile  rohith*/
 import { useMemo } from 'react';
 import {
   TrendingUp, DollarSign, Award, Briefcase, ArrowUpRight, Building2, Users, BarChart,
@@ -8,6 +8,7 @@ import {
   LineChart, Line, PieChart, Pie, Cell,
   AreaChart, Area, Legend, BarChart as RechartsBarChart, Bar,
 } from 'recharts';
+
 import type { Company, PlacementTrend, PackageDist } from '../types';
 const C = ['#38bdf8','#34d399','#fbbf24','#f472b6','#a78bfa','#22d3ee','#fb923c'];
 const BRANCH_C: Record<string, string> = {
@@ -34,7 +35,6 @@ interface DashboardProps {
   packageDist: PackageDist[];
   companies: Company[];
 }
-
 export function Dashboard({ stats: propStats, trends: propTrends, packageDist: propPackageDist, companies: propCompanies }: DashboardProps) {
   const normalizedCompanies = propCompanies;
 
