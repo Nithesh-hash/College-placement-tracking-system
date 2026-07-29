@@ -11,8 +11,10 @@ import type { Company, PlacementTrend, PackageDist } from '../types';
 
 const C = ['#38bdf8','#34d399','#fbbf24','#f472b6','#a78bfa','#22d3ee','#fb923c'];
 const BRANCH_C: Record<string, string> = {
-  'CSE':'#38bdf8','IT':'#34d399','ECE':'#fbbf24','EE':'#a78bfa',
+  'CSE':'#38bdf8','IT':'#34d399','ECE':'#fbbf24','EEE':'#a78bfa',
   'ME':'#f472b6','CE':'#fb923c','CSE (AI/ML)':'#22d3ee','CSE (Data Science)':'#818cf8',
+  'CSE (Cyber Security)':'#ec4899','ECE (VLSI)':'#3b82f6','ECE (Embedded)':'#f43f5e',
+  'Biotechnology':'#10b981','Chemical Engineering':'#f97316'
 };
 const TOOLTIP_STYLE = {
   backgroundColor: '#1a1e2e',
@@ -32,35 +34,89 @@ interface DashboardProps {
   companies: Company[];
 }
 
-export function Dashboard({ stats, trends, packageDist, companies }: DashboardProps) {
-  const topByPackage   = useMemo(() => [...companies].sort((a,b)=>(b.package||0)-(a.package||0)).slice(0,6), [companies]);
-  const topByStipend   = useMemo(() => companies.filter(c=>c.stipend&&c.stipend>0).sort((a,b)=>(b.stipend||0)-(a.stipend||0)).slice(0,6), [companies]);
-  const topByHires     = useMemo(() => [...companies].filter(c=>c.num_offers>0).sort((a,b)=>b.num_offers-a.num_offers).slice(0,10), [companies]);
+export function Dashboard({ stats: propStats, trends: propTrends, packageDist: propPackageDist, companies: propCompanies }: DashboardProps) {
+  const normalizedCompanies = propCompanies;
+
+  const stats = useMemo(() => {
+    if (!propCompanies || propCompanies.length === 0) {
+      return {
+        totalOffers: 0,
+        totalCompanies: 0,
+        highestPackage: 0,
+        avgPackage: 0,
+        medianPackage: 0,
+        highestStipend: 0,
+        avgStipend: 0,
+        placementRate: 0
+      };
+    }
+    const totalOffers = propCompanies.reduce((sum, c) => sum + (c.num_offers || 0), 0);
+    const totalCompanies = new Set(propCompanies.map(c => c.name)).size;
+    const highestPackage = Math.max(...propCompanies.map(c => c.package || 0));
+    const packages = propCompanies.map(c => c.package || 0).sort((a,b)=>a-b);
+    const avgPackage = Number((packages.reduce((sum, p) => sum + p, 0) / packages.length).toFixed(1));
+    const medianPackage = packages[Math.floor(packages.length / 2)];
+    const highestStipend = Math.max(...propCompanies.map(c => c.stipend || 0));
+    const stipends = propCompanies.map(c => c.stipend || 0).filter(s => s > 0);
+    const avgStipend = Math.round(stipends.reduce((sum, s) => sum + s, 0) / (stipends.length || 1));
+    const placementRate = propStats?.placementRate ?? 91;
+
+    return {
+      totalOffers,
+      totalCompanies,
+      highestPackage,
+      avgPackage,
+      medianPackage,
+      highestStipend,
+      avgStipend,
+      placementRate
+    };
+  }, [propCompanies, propStats]);
+
+  const packageDist = useMemo(() => {
+    if (propPackageDist && propPackageDist.length > 0) {
+      return propPackageDist;
+    }
+    const ranges = [
+      { id: '1', range_label: '< 6 LPA', range_start: 0, range_end: 6, count: 0, label: '< 6 LPA', year: 2026 },
+      { id: '2', range_label: '6 - 10 LPA', range_start: 6, range_end: 10, count: 0, label: '6 - 10 LPA', year: 2026 },
+      { id: '3', range_label: '10 - 20 LPA', range_start: 10, range_end: 20, count: 0, label: '10 - 20 LPA', year: 2026 },
+      { id: '4', range_label: '> 20 LPA', range_start: 20, range_end: 100, count: 0, label: '> 20 LPA', year: 2026 }
+    ];
+    propCompanies.forEach(c => {
+      const p = c.package || 0;
+      const o = c.num_offers || 0;
+      if (p < 6) ranges[0].count += o;
+      else if (p < 10) ranges[1].count += o;
+      else if (p < 20) ranges[2].count += o;
+      else ranges[3].count += o;
+    });
+    return ranges;
+  }, [propCompanies, propPackageDist]);
+
+  const trends = propTrends;
+
+  const topByPackage   = useMemo(() => [...normalizedCompanies].sort((a,b)=>(b.package||0)-(a.package||0)).slice(0,6), [normalizedCompanies]);
+  const topByStipend   = useMemo(() => normalizedCompanies.filter(c=>c.stipend&&c.stipend>0).sort((a,b)=>(b.stipend||0)-(a.stipend||0)).slice(0,6), [normalizedCompanies]);
+  const topByHires     = useMemo(() => [...normalizedCompanies].filter(c=>c.num_offers>0).sort((a,b)=>b.num_offers-a.num_offers).slice(0,10), [normalizedCompanies]);
 
   const branchOffers = useMemo(() => {
     const m = new Map<string,number>();
-    companies.forEach(c => c.branches?.forEach(b => m.set(b,(m.get(b)||0)+(c.num_offers||0))));
+    normalizedCompanies.forEach(c => c.branches?.forEach(b => m.set(b,(m.get(b)||0)+(c.num_offers||0))));
     return Array.from(m.entries()).map(([branch,offers])=>({branch,offers})).sort((a,b)=>b.offers-a.offers).slice(0,8);
-  }, [companies]);
+  }, [normalizedCompanies]);
 
   const stipendRanges = useMemo(() => {
-    const src = companies.filter(c=>c.stipend&&c.stipend>0);
+    const src = normalizedCompanies.filter(c=>c.stipend&&c.stipend>0);
     const r = [
       {label:'0-25K',count:0,color:'#6366f1'},{label:'25-50K',count:0,color:'#38bdf8'},
       {label:'50-75K',count:0,color:'#34d399'},{label:'75-100K',count:0,color:'#fbbf24'},{label:'100K+',count:0,color:'#f472b6'},
     ];
     src.forEach(c=>{const s=c.stipend||0; if(s>=100000)r[4].count++; else if(s>=75000)r[3].count++; else if(s>=50000)r[2].count++; else if(s>=25000)r[1].count++; else r[0].count++;});
     return r.filter(x=>x.count>0);
-  }, [companies]);
+  }, [normalizedCompanies]);
 
   const chartData = trends.slice().reverse();
-
-  const getRankStyle = (idx: number) => {
-    if (idx===0) return { background:'linear-gradient(135deg,#fbbf24,#f97316)' };
-    if (idx===1) return { background:'linear-gradient(135deg,#94a3b8,#cbd5e1)' };
-    if (idx===2) return { background:'linear-gradient(135deg,#b45309,#d97706)' };
-    return { background:'rgba(56,189,248,0.15)', color:'#38bdf8' };
-  };
   return (
     <div style={{ display:'flex', flexDirection:'column', gap: 24 }}>
       {/* KPI row */}

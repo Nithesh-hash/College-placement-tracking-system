@@ -25,6 +25,7 @@ const BRANCH_COLORS: Record<string, string> = {
   'CSE': '#0ea5e9',
   'IT': '#06b6d4',
   'ECE': '#14b8a6',
+  'EEE': '#22c55e',
   'EE': '#22c55e',
   'ME': '#eab308',
   'CE': '#f97316',
@@ -34,6 +35,7 @@ const BRANCH_COLORS: Record<string, string> = {
   'ECE (VLSI)': '#a855f7',
   'ECE (Embedded)': '#d946ef',
   'Biotechnology': '#84cc16',
+  'Chemical Engineering': '#fb923c',
 };
 
 const TOOLTIP_STYLE = {
@@ -63,13 +65,27 @@ interface BranchAnalyticsProps {
 export function BranchAnalytics({ branchStats }: BranchAnalyticsProps) {
   const [selectedYear, setSelectedYear] = useState<number>(2026);
 
-  const years = useMemo(() => {
-    return Array.from(new Set(branchStats.map((b) => b.year))).sort((a, b) => b - a);
+  const normalizedBranchStats = useMemo(() => {
+    return branchStats.map(b => {
+      const students_placed = b.students_placed ?? (b as any).placed_students ?? 0;
+      const total_offers = b.total_offers ?? students_placed;
+      const companies_visited = b.companies_visited ?? 0;
+      return {
+        ...b,
+        students_placed,
+        total_offers,
+        companies_visited
+      };
+    });
   }, [branchStats]);
 
+  const years = useMemo(() => {
+    return Array.from(new Set(normalizedBranchStats.map((b) => b.year))).sort((a, b) => b - a);
+  }, [normalizedBranchStats]);
+
   const yearStats = useMemo(() => {
-    return branchStats.filter((b) => b.year === selectedYear);
-  }, [branchStats, selectedYear]);
+    return normalizedBranchStats.filter((b) => b.year === selectedYear);
+  }, [normalizedBranchStats, selectedYear]);
 
   const totalPlaced = useMemo(() => {
     return yearStats.reduce((sum, b) => sum + b.students_placed, 0);
