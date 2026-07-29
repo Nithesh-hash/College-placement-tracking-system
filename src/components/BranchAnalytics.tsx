@@ -21,6 +21,8 @@ import {
 } from 'recharts';
 import type { BranchStat } from '../types';
 
+
+
 const BRANCH_COLORS: Record<string, string> = {
   'CSE': '#0ea5e9',
   'IT': '#06b6d4',
@@ -61,7 +63,6 @@ function safePct(placed: number, total: number): number {
 interface BranchAnalyticsProps {
   branchStats: BranchStat[];
 }
-
 export function BranchAnalytics({ branchStats }: BranchAnalyticsProps) {
   const [selectedYear, setSelectedYear] = useState<number>(2026);
 
@@ -82,7 +83,6 @@ export function BranchAnalytics({ branchStats }: BranchAnalyticsProps) {
   const years = useMemo(() => {
     return Array.from(new Set(normalizedBranchStats.map((b) => b.year))).sort((a, b) => b - a);
   }, [normalizedBranchStats]);
-
   const yearStats = useMemo(() => {
     return normalizedBranchStats.filter((b) => b.year === selectedYear);
   }, [normalizedBranchStats, selectedYear]);
