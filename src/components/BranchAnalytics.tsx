@@ -42,6 +42,13 @@ const TOOLTIP_STYLE = {
   color: 'white',
   fontSize: 12,
 };
+
+// Safe percentage helper — avoids NaN/Infinity when total_students is 0
+function safePct(placed: number, total: number): number {
+  if (!total || total <= 0) return 0;
+  return Math.min(100, Math.max(0, (placed / total) * 100));
+}
+
 interface BranchAnalyticsProps {
   branchStats: BranchStat[];
 }
@@ -65,11 +72,26 @@ export function BranchAnalytics({ branchStats }: BranchAnalyticsProps) {
     return yearStats.reduce((sum, b) => sum + b.total_students, 0);
   }, [yearStats]);
 
-  const overallPlacementRate = totalStudents > 0 ? ((totalPlaced / totalStudents) * 100).toFixed(1) : 0;
+  const overallPlacementRate = totalStudents > 0 ? ((totalPlaced / totalStudents) * 100).toFixed(1) : '0.0';
 
   const topPayingBranches = useMemo(() => {
     return [...yearStats].sort((a, b) => b.avg_package - a.avg_package).slice(0, 5);
   }, [yearStats]);
+
+  // Highest values across the current year's data, used to give bar charts
+  // an explicit domain so they don't render partial/floating bars.
+  const maxAvgPackage = useMemo(
+    () => Math.max(1, ...yearStats.map((b) => b.avg_package)),
+    [yearStats]
+  );
+  const maxHighestPackage = useMemo(
+    () => Math.max(1, ...yearStats.map((b) => b.highest_package)),
+    [yearStats]
+  );
+  const maxOffers = useMemo(
+    () => Math.max(1, ...yearStats.map((b) => b.total_offers)),
+    [yearStats]
+  );
 
   const getRankBadge = (idx: number) => {
     if (idx === 0) return { bg: 'linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%)', shadow: 'rgba(251,191,36,0.3)' };
@@ -77,6 +99,8 @@ export function BranchAnalytics({ branchStats }: BranchAnalyticsProps) {
     if (idx === 2) return { bg: 'linear-gradient(135deg, #cd7f32 0%, #a0522d 100%)', shadow: 'rgba(205,127,50,0.3)' };
     return { bg: 'rgba(56,189,248,0.1)', shadow: 'transparent' };
   };
+
+  const hasData = yearStats.length > 0;
 
   return (
     <div className="space-y-6">
@@ -152,248 +176,275 @@ export function BranchAnalytics({ branchStats }: BranchAnalyticsProps) {
         </div>
       </div>
 
-      {/* Charts Row 1 */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Average Package Comparison */}
-        <div className="chart-card">
-          <div className="flex items-center justify-between mb-5">
-            <div>
-              <h3 className="text-base font-semibold text-white">Average Package</h3>
-              <p style={{ fontSize: 12, color: 'var(--text-secondary)' }}>By branch (LPA)</p>
-            </div>
-            <div style={{ background: 'rgba(56,189,248,0.1)', borderRadius: 8, padding: 8 }}>
-              <DollarSign className="w-4 h-4" style={{ color: '#38bdf8' }} />
-            </div>
-          </div>
-          <ResponsiveContainer width="100%" height={320}>
-            <RechartsBarChart data={yearStats} layout="vertical">
-              <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.06)" />
-              <XAxis type="number" stroke="rgba(255,255,255,0.4)" fontSize={11} />
-              <YAxis dataKey="branch" type="category" stroke="rgba(255,255,255,0.4)" width={90} tick={{ fontSize: 10 }} />
-              <Tooltip contentStyle={TOOLTIP_STYLE} formatter={(value) => [`${value} LPA`, 'Avg Package']} />
-              <Bar dataKey="avg_package" radius={[0, 6, 6, 0]}>
-                {yearStats.map((entry) => (
-                  <Cell key={entry.branch} fill={BRANCH_COLORS[entry.branch] || '#0ea5e9'} />
-                ))}
-              </Bar>
-            </RechartsBarChart>
-          </ResponsiveContainer>
+      {!hasData ? (
+        <div className="chart-card" style={{ textAlign: 'center', padding: '48px 16px', color: 'var(--text-secondary)' }}>
+          No branch data available for {selectedYear}.
         </div>
-
-        {/* Highest Package Comparison */}
-        <div className="chart-card">
-          <div className="flex items-center justify-between mb-5">
-            <div>
-              <h3 className="text-base font-semibold text-white">Highest Package</h3>
-              <p style={{ fontSize: 12, color: 'var(--text-secondary)' }}>By branch (LPA)</p>
-            </div>
-            <div style={{ background: 'rgba(251,191,36,0.1)', borderRadius: 8, padding: 8 }}>
-              <Award className="w-4 h-4" style={{ color: '#fbbf24' }} />
-            </div>
-          </div>
-          <ResponsiveContainer width="100%" height={320}>
-            <RechartsBarChart data={yearStats} layout="vertical">
-              <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.06)" />
-              <XAxis type="number" stroke="rgba(255,255,255,0.4)" fontSize={11} />
-              <YAxis dataKey="branch" type="category" stroke="rgba(255,255,255,0.4)" width={90} tick={{ fontSize: 10 }} />
-              <Tooltip contentStyle={TOOLTIP_STYLE} formatter={(value) => [`${value} LPA`, 'Highest Package']} />
-              <Bar dataKey="highest_package" radius={[0, 6, 6, 0]}>
-                {yearStats.map((entry) => (
-                  <Cell key={entry.branch} fill={BRANCH_COLORS[entry.branch] || '#0ea5e9'} />
-                ))}
-              </Bar>
-            </RechartsBarChart>
-          </ResponsiveContainer>
-        </div>
-      </div>
-
-      {/* Charts Row 2 */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Students Placed Pie */}
-        <div className="chart-card">
-          <div className="flex items-center justify-between mb-5">
-            <div>
-              <h3 className="text-base font-semibold text-white">Students Placed</h3>
-              <p style={{ fontSize: 12, color: 'var(--text-secondary)' }}>Distribution by branch</p>
-            </div>
-            <div style={{ background: 'rgba(56,189,248,0.1)', borderRadius: 8, padding: 8 }}>
-              <Users className="w-4 h-4" style={{ color: '#38bdf8' }} />
-            </div>
-          </div>
-          <ResponsiveContainer width="100%" height={320}>
-            <PieChart>
-              <Pie
-                data={yearStats}
-                cx="50%"
-                cy="50%"
-                outerRadius={100}
-                dataKey="students_placed"
-                nameKey="branch"
-                label={({ name, percent }) => `${name} ${((percent || 0) * 100).toFixed(0)}%`}
-                labelLine={false}
-              >
-                {yearStats.map((entry) => (
-                  <Cell key={entry.branch} fill={BRANCH_COLORS[entry.branch] || '#0ea5e9'} />
-                ))}
-              </Pie>
-              <Tooltip contentStyle={TOOLTIP_STYLE} />
-            </PieChart>
-          </ResponsiveContainer>
-        </div>
-
-        {/* Total Offers Bar */}
-        <div className="chart-card">
-          <div className="flex items-center justify-between mb-5">
-            <div>
-              <h3 className="text-base font-semibold text-white">Total Offers</h3>
-              <p style={{ fontSize: 12, color: 'var(--text-secondary)' }}>Received by branch</p>
-            </div>
-            <div style={{ background: 'rgba(52,211,153,0.1)', borderRadius: 8, padding: 8 }}>
-              <Briefcase className="w-4 h-4" style={{ color: '#34d399' }} />
-            </div>
-          </div>
-          <ResponsiveContainer width="100%" height={320}>
-            <RechartsBarChart data={yearStats}>
-              <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.06)" />
-              <XAxis dataKey="branch" stroke="rgba(255,255,255,0.4)" tick={{ fontSize: 9 }} angle={-35} textAnchor="end" height={70} />
-              <YAxis stroke="rgba(255,255,255,0.4)" fontSize={11} />
-              <Tooltip contentStyle={TOOLTIP_STYLE} />
-              <Bar dataKey="total_offers" radius={[6, 6, 0, 0]}>
-                {yearStats.map((entry) => (
-                  <Cell key={entry.branch} fill={BRANCH_COLORS[entry.branch] || '#0ea5e9'} />
-                ))}
-              </Bar>
-            </RechartsBarChart>
-          </ResponsiveContainer>
-        </div>
-      </div>
-
-      {/* Top Paying Branches */}
-      <div className="chart-card">
-        <div className="flex items-center justify-between mb-5">
-          <div>
-            <h3 className="text-base font-semibold text-white">Top Paying Branches</h3>
-            <p style={{ fontSize: 12, color: 'var(--text-secondary)' }}>Highest average packages</p>
-          </div>
-          <div style={{ background: 'rgba(52,211,153,0.1)', borderRadius: 8, padding: 8 }}>
-            <DollarSign className="w-4 h-4" style={{ color: '#34d399' }} />
-          </div>
-        </div>
-        <div className="space-y-2">
-          {topPayingBranches.map((branch, idx) => {
-            const badge = getRankBadge(idx);
-            return (
-              <div key={branch.id} className="rank-row">
-                <div
-                  className="flex items-center justify-center font-bold text-white"
-                  style={{
-                    width: 36,
-                    height: 36,
-                    background: badge.bg,
-                    borderRadius: 10,
-                    fontSize: 14,
-                    boxShadow: idx < 3 ? `0 4px 12px ${badge.shadow}` : 'none',
-                  }}
-                >
-                  {idx + 1}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <h4 className="font-medium text-white text-sm truncate">{branch.branch}</h4>
-                  <p style={{ fontSize: 11, color: 'var(--text-secondary)' }}>
-                    {branch.students_placed}/{branch.total_students} placed
-                  </p>
-                </div>
-                <div className="flex-1 hidden sm:block">
-                  <div style={{ height: 6, background: 'rgba(255,255,255,0.06)', borderRadius: 3, overflow: 'hidden' }}>
-                    <div
-                      style={{
-                        width: `${(branch.students_placed / branch.total_students) * 100}%`,
-                        height: '100%',
-                        background: BRANCH_COLORS[branch.branch] || '#0ea5e9',
-                        borderRadius: 3,
-                      }}
-                    />
-                  </div>
-                </div>
-                <div className="text-right" style={{ minWidth: 70 }}>
-                  <div className="font-bold" style={{ fontSize: 15, color: '#38bdf8' }}>{branch.avg_package} LPA</div>
-                  <div style={{ fontSize: 10, color: 'var(--text-muted)' }}>avg</div>
-                </div>
-                <div className="text-right" style={{ minWidth: 70 }}>
-                  <div className="font-bold" style={{ fontSize: 15, color: '#fbbf24' }}>{branch.highest_package} LPA</div>
-                  <div style={{ fontSize: 10, color: 'var(--text-muted)' }}>highest</div>
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      </div>
-
-      {/* Branch Cards */}
-      <div className="chart-card">
-        <div className="flex items-center justify-between mb-5">
-          <div>
-            <h3 className="text-base font-semibold text-white">Detailed Branch Statistics</h3>
-            <p style={{ fontSize: 12, color: 'var(--text-secondary)' }}>Complete breakdown by branch</p>
-          </div>
-        </div>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-          {yearStats.map((branch) => (
-            <div key={branch.id} className="company-card">
-              <div className="flex items-center gap-3 mb-3">
-                <div
-                  className="flex items-center justify-center font-bold text-white"
-                  style={{
-                    width: 40,
-                    height: 40,
-                    background: BRANCH_COLORS[branch.branch] || '#0ea5e9',
-                    borderRadius: 10,
-                    fontSize: 12,
-                  }}
-                >
-                  {branch.branch.substring(0, 3).toUpperCase()}
-                </div>
-                <div className="min-w-0">
-                  <h4 className="font-medium text-white text-sm truncate">{branch.branch}</h4>
-                  <p style={{ fontSize: 11, color: 'var(--text-secondary)' }}>{branch.companies_visited} companies</p>
-                </div>
-              </div>
-              <div className="space-y-3">
+      ) : (
+        <>
+          {/* Charts Row 1 */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* Average Package Comparison */}
+            <div className="chart-card">
+              <div className="flex items-center justify-between mb-5">
                 <div>
-                  <div className="flex justify-between text-xs mb-1">
-                    <span style={{ color: 'var(--text-muted)' }}>Placed</span>
-                    <span style={{ color: 'var(--text-secondary)' }}>{branch.students_placed}/{branch.total_students}</span>
-                  </div>
-                  <div style={{ height: 5, background: 'rgba(255,255,255,0.06)', borderRadius: 3, overflow: 'hidden' }}>
-                    <div
-                      style={{
-                        width: `${(branch.students_placed / branch.total_students) * 100}%`,
-                        height: '100%',
-                        background: BRANCH_COLORS[branch.branch] || '#0ea5e9',
-                        borderRadius: 3,
-                      }}
-                    />
-                  </div>
+                  <h3 className="text-base font-semibold text-white">Average Package</h3>
+                  <p style={{ fontSize: 12, color: 'var(--text-secondary)' }}>By branch (LPA)</p>
                 </div>
-                <div className="grid grid-cols-2 gap-2">
-                  <div className="mini-stat">
-                    <span style={{ fontSize: 10, color: 'var(--text-muted)' }}>Avg Pkg</span>
-                    <div className="font-semibold" style={{ fontSize: 13, color: '#38bdf8' }}>{branch.avg_package} LPA</div>
-                  </div>
-                  <div className="mini-stat">
-                    <span style={{ fontSize: 10, color: 'var(--text-muted)' }}>High Pkg</span>
-                    <div className="font-semibold" style={{ fontSize: 13, color: '#fbbf24' }}>{branch.highest_package} LPA</div>
-                  </div>
-                </div>
-                <div style={{ paddingTop: 8, borderTop: '1px solid var(--border)' }} className="flex justify-between items-center">
-                  <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>Offers</span>
-                  <span className="font-semibold text-white text-sm">{branch.total_offers}</span>
+                <div style={{ background: 'rgba(56,189,248,0.1)', borderRadius: 8, padding: 8 }}>
+                  <DollarSign className="w-4 h-4" style={{ color: '#38bdf8' }} />
                 </div>
               </div>
+              <ResponsiveContainer width="100%" height={Math.max(320, yearStats.length * 44)}>
+                <RechartsBarChart data={yearStats} layout="vertical" margin={{ top: 4, right: 24, bottom: 4, left: 4 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.06)" horizontal={false} />
+                  <XAxis type="number" domain={[0, Math.ceil(maxAvgPackage * 1.15)]} stroke="rgba(255,255,255,0.4)" fontSize={11} />
+                  <YAxis
+                    dataKey="branch"
+                    type="category"
+                    stroke="rgba(255,255,255,0.4)"
+                    width={130}
+                    tick={{ fontSize: 10 }}
+                    interval={0}
+                  />
+                  <Tooltip contentStyle={TOOLTIP_STYLE} formatter={(value) => [`${value} LPA`, 'Avg Package']} />
+                  <Bar dataKey="avg_package" radius={[0, 6, 6, 0]} maxBarSize={28} minPointSize={2}>
+                    {yearStats.map((entry) => (
+                      <Cell key={entry.id} fill={BRANCH_COLORS[entry.branch] || '#0ea5e9'} />
+                    ))}
+                  </Bar>
+                </RechartsBarChart>
+              </ResponsiveContainer>
             </div>
-          ))}
-        </div>
-      </div>
+
+            {/* Highest Package Comparison */}
+            <div className="chart-card">
+              <div className="flex items-center justify-between mb-5">
+                <div>
+                  <h3 className="text-base font-semibold text-white">Highest Package</h3>
+                  <p style={{ fontSize: 12, color: 'var(--text-secondary)' }}>By branch (LPA)</p>
+                </div>
+                <div style={{ background: 'rgba(251,191,36,0.1)', borderRadius: 8, padding: 8 }}>
+                  <Award className="w-4 h-4" style={{ color: '#fbbf24' }} />
+                </div>
+              </div>
+              <ResponsiveContainer width="100%" height={Math.max(320, yearStats.length * 44)}>
+                <RechartsBarChart data={yearStats} layout="vertical" margin={{ top: 4, right: 24, bottom: 4, left: 4 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.06)" horizontal={false} />
+                  <XAxis type="number" domain={[0, Math.ceil(maxHighestPackage * 1.15)]} stroke="rgba(255,255,255,0.4)" fontSize={11} />
+                  <YAxis
+                    dataKey="branch"
+                    type="category"
+                    stroke="rgba(255,255,255,0.4)"
+                    width={130}
+                    tick={{ fontSize: 10 }}
+                    interval={0}
+                  />
+                  <Tooltip contentStyle={TOOLTIP_STYLE} formatter={(value) => [`${value} LPA`, 'Highest Package']} />
+                  <Bar dataKey="highest_package" radius={[0, 6, 6, 0]} maxBarSize={28} minPointSize={2}>
+                    {yearStats.map((entry) => (
+                      <Cell key={entry.id} fill={BRANCH_COLORS[entry.branch] || '#0ea5e9'} />
+                    ))}
+                  </Bar>
+                </RechartsBarChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+
+          {/* Charts Row 2 */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* Students Placed Pie */}
+            <div className="chart-card">
+              <div className="flex items-center justify-between mb-5">
+                <div>
+                  <h3 className="text-base font-semibold text-white">Students Placed</h3>
+                  <p style={{ fontSize: 12, color: 'var(--text-secondary)' }}>Distribution by branch</p>
+                </div>
+                <div style={{ background: 'rgba(56,189,248,0.1)', borderRadius: 8, padding: 8 }}>
+                  <Users className="w-4 h-4" style={{ color: '#38bdf8' }} />
+                </div>
+              </div>
+              <ResponsiveContainer width="100%" height={340}>
+                <PieChart margin={{ top: 16, right: 16, bottom: 16, left: 16 }}>
+                  <Pie
+                    data={yearStats}
+                    cx="50%"
+                    cy="50%"
+                    outerRadius={90}
+                    dataKey="students_placed"
+                    nameKey="branch"
+                    minAngle={2}
+                    label={({ name, percent }) => `${name} ${((percent || 0) * 100).toFixed(0)}%`}
+                    labelLine={{ stroke: 'rgba(255,255,255,0.25)' }}
+                  >
+                    {yearStats.map((entry) => (
+                      <Cell key={entry.id} fill={BRANCH_COLORS[entry.branch] || '#0ea5e9'} />
+                    ))}
+                  </Pie>
+                  <Tooltip contentStyle={TOOLTIP_STYLE} />
+                </PieChart>
+              </ResponsiveContainer>
+            </div>
+
+            {/* Total Offers Bar */}
+            <div className="chart-card">
+              <div className="flex items-center justify-between mb-5">
+                <div>
+                  <h3 className="text-base font-semibold text-white">Total Offers</h3>
+                  <p style={{ fontSize: 12, color: 'var(--text-secondary)' }}>Received by branch</p>
+                </div>
+                <div style={{ background: 'rgba(52,211,153,0.1)', borderRadius: 8, padding: 8 }}>
+                  <Briefcase className="w-4 h-4" style={{ color: '#34d399' }} />
+                </div>
+              </div>
+              <ResponsiveContainer width="100%" height={340}>
+                <RechartsBarChart data={yearStats} margin={{ top: 8, right: 8, bottom: 60, left: 8 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.06)" vertical={false} />
+                  <XAxis dataKey="branch" stroke="rgba(255,255,255,0.4)" tick={{ fontSize: 9 }} angle={-35} textAnchor="end" interval={0} height={70} />
+                  <YAxis stroke="rgba(255,255,255,0.4)" fontSize={11} domain={[0, Math.ceil(maxOffers * 1.15)]} allowDecimals={false} />
+                  <Tooltip contentStyle={TOOLTIP_STYLE} />
+                  <Bar dataKey="total_offers" radius={[6, 6, 0, 0]} maxBarSize={48} minPointSize={2}>
+                    {yearStats.map((entry) => (
+                      <Cell key={entry.id} fill={BRANCH_COLORS[entry.branch] || '#0ea5e9'} />
+                    ))}
+                  </Bar>
+                </RechartsBarChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+
+          {/* Top Paying Branches */}
+          <div className="chart-card">
+            <div className="flex items-center justify-between mb-5">
+              <div>
+                <h3 className="text-base font-semibold text-white">Top Paying Branches</h3>
+                <p style={{ fontSize: 12, color: 'var(--text-secondary)' }}>Highest average packages</p>
+              </div>
+              <div style={{ background: 'rgba(52,211,153,0.1)', borderRadius: 8, padding: 8 }}>
+                <DollarSign className="w-4 h-4" style={{ color: '#34d399' }} />
+              </div>
+            </div>
+            <div className="space-y-2">
+              {topPayingBranches.map((branch, idx) => {
+                const badge = getRankBadge(idx);
+                const pct = safePct(branch.students_placed, branch.total_students);
+                return (
+                  <div key={branch.id} className="rank-row">
+                    <div
+                      className="flex items-center justify-center font-bold text-white"
+                      style={{
+                        width: 36,
+                        height: 36,
+                        background: badge.bg,
+                        borderRadius: 10,
+                        fontSize: 14,
+                        boxShadow: idx < 3 ? `0 4px 12px ${badge.shadow}` : 'none',
+                      }}
+                    >
+                      {idx + 1}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <h4 className="font-medium text-white text-sm truncate">{branch.branch}</h4>
+                      <p style={{ fontSize: 11, color: 'var(--text-secondary)' }}>
+                        {branch.students_placed}/{branch.total_students} placed
+                      </p>
+                    </div>
+                    <div className="flex-1 hidden sm:block">
+                      <div style={{ height: 6, background: 'rgba(255,255,255,0.06)', borderRadius: 3, overflow: 'hidden' }}>
+                        <div
+                          style={{
+                            width: `${pct}%`,
+                            height: '100%',
+                            background: BRANCH_COLORS[branch.branch] || '#0ea5e9',
+                            borderRadius: 3,
+                          }}
+                        />
+                      </div>
+                    </div>
+                    <div className="text-right" style={{ minWidth: 70 }}>
+                      <div className="font-bold" style={{ fontSize: 15, color: '#38bdf8' }}>{branch.avg_package} LPA</div>
+                      <div style={{ fontSize: 10, color: 'var(--text-muted)' }}>avg</div>
+                    </div>
+                    <div className="text-right" style={{ minWidth: 70 }}>
+                      <div className="font-bold" style={{ fontSize: 15, color: '#fbbf24' }}>{branch.highest_package} LPA</div>
+                      <div style={{ fontSize: 10, color: 'var(--text-muted)' }}>highest</div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Branch Cards */}
+          <div className="chart-card">
+            <div className="flex items-center justify-between mb-5">
+              <div>
+                <h3 className="text-base font-semibold text-white">Detailed Branch Statistics</h3>
+                <p style={{ fontSize: 12, color: 'var(--text-secondary)' }}>Complete breakdown by branch</p>
+              </div>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+              {yearStats.map((branch) => {
+                const pct = safePct(branch.students_placed, branch.total_students);
+                return (
+                  <div key={branch.id} className="company-card">
+                    <div className="flex items-center gap-3 mb-3">
+                      <div
+                        className="flex items-center justify-center font-bold text-white"
+                        style={{
+                          width: 40,
+                          height: 40,
+                          background: BRANCH_COLORS[branch.branch] || '#0ea5e9',
+                          borderRadius: 10,
+                          fontSize: 12,
+                        }}
+                      >
+                        {branch.branch.substring(0, 3).toUpperCase()}
+                      </div>
+                      <div className="min-w-0">
+                        <h4 className="font-medium text-white text-sm truncate">{branch.branch}</h4>
+                        <p style={{ fontSize: 11, color: 'var(--text-secondary)' }}>{branch.companies_visited} companies</p>
+                      </div>
+                    </div>
+                    <div className="space-y-3">
+                      <div>
+                        <div className="flex justify-between text-xs mb-1">
+                          <span style={{ color: 'var(--text-muted)' }}>Placed</span>
+                          <span style={{ color: 'var(--text-secondary)' }}>{branch.students_placed}/{branch.total_students}</span>
+                        </div>
+                        <div style={{ height: 5, background: 'rgba(255,255,255,0.06)', borderRadius: 3, overflow: 'hidden' }}>
+                          <div
+                            style={{
+                              width: `${pct}%`,
+                              height: '100%',
+                              background: BRANCH_COLORS[branch.branch] || '#0ea5e9',
+                              borderRadius: 3,
+                            }}
+                          />
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-2 gap-2">
+                        <div className="mini-stat">
+                          <span style={{ fontSize: 10, color: 'var(--text-muted)' }}>Avg Pkg</span>
+                          <div className="font-semibold" style={{ fontSize: 13, color: '#38bdf8' }}>{branch.avg_package} LPA</div>
+                        </div>
+                        <div className="mini-stat">
+                          <span style={{ fontSize: 10, color: 'var(--text-muted)' }}>High Pkg</span>
+                          <div className="font-semibold" style={{ fontSize: 13, color: '#fbbf24' }}>{branch.highest_package} LPA</div>
+                        </div>
+                      </div>
+                      <div style={{ paddingTop: 8, borderTop: '1px solid var(--border)' }} className="flex justify-between items-center">
+                        <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>Offers</span>
+                        <span className="font-semibold text-white text-sm">{branch.total_offers}</span>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </>
+      )}
     </div>
   );
 }
